@@ -5,7 +5,7 @@ enum RenderState {
 }
 
 pub struct Animation {
-    pub render_target: RenderTarget,
+    render_target: RenderTarget,
     camera: Camera2D,
     pub bg_color: Color,
     render_state: RenderState,
@@ -18,9 +18,10 @@ impl Animation {
         // Screen dimensions will be:
         //     x: -width/2 -> width/2 (left -> right)
         //     y: -height/2 -> height/2 (bottom -> top)
-        let mut camera = Camera2D::from_display_rect(Rect::new(0., 0., width, height));
         let render_target = render_target(width as u32, height as u32);
         render_target.texture.set_filter(FilterMode::Linear);
+
+        let mut camera = Camera2D::from_display_rect(Rect::new(0., 0., width, height));
 
         camera.render_target = Some(render_target.clone());
         camera.target = vec2(0., 0.);
@@ -44,6 +45,29 @@ impl Animation {
             draw_size: vec2(width, height),
             material: None,
         }
+    }
+
+    pub fn get_world_mouse(&self) -> Vec2 {
+        let mouse: Vec2 = mouse_position().into();
+        self.screen_to_world(mouse)
+    }
+
+    pub fn screen_to_world(&self, mut point: Vec2) -> Vec2 {
+        // Move window space to -1 -> 1
+        point.x = (point.x - screen_width() / 2.0) / (screen_width() * 0.5);
+        point.y = -(point.y - screen_height() / 2.0) / (screen_height() * 0.5);
+
+        let screen_size: Vec2 = screen_size().into();
+        let mut left_over_space: Vec2 = screen_size - self.draw_size; // in pixels
+        left_over_space /= screen_size; // as a percentage 0 -> 1
+        left_over_space += vec2(1., 1.); // We want the position to be 100% plus any left over
+                                         // space
+
+        // Convert from -1 -> 1 to render size + what ever percent is left over (so the borders
+        // don't mess up the conversions)
+        point.y *= 0.5 * left_over_space.y * self.render_target.texture.height();
+        point.x *= 0.5 * left_over_space.x * self.render_target.texture.width();
+        point
     }
 
     pub fn enable_fxaa(&mut self) {
@@ -86,7 +110,8 @@ impl Animation {
             gl_use_default_material();
         }
 
-        clear_background(self.bg_color);
+        // TODO: Uncomment this
+        // clear_background(self.bg_color);
 
         let (sw, sh) = screen_size();
 

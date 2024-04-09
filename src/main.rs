@@ -29,6 +29,8 @@ async fn main() {
                 ..Default::default()
             },
         );
+        let mouse = animation.get_world_mouse();
+        draw_circle(mouse.x, mouse.y, 10.0, ORANGE);
 
         animation.set_default_camera();
         animation.draw_frame();
