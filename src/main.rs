@@ -33,8 +33,8 @@ async fn main() {
         draw_rectangle_ex(
             0.0,
             0.0,
-            30.0,
             100.0,
+            200.0,
             DrawRectangleParams {
                 rotation: PI / 2. + rot,
                 offset: vec2(0.5, 0.5),
