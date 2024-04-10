@@ -29,7 +29,10 @@ index_file := "<html lang='en'>
 </html>"
 
 build-web: 
-    cargo build --release --target wasm32-unknown-unknown
-    wget -O ./target/wasm32-unknown-unknown/release/mq_js_bundle.js https://raw.githubusercontent.com/not-fl3/macroquad/master/js/mq_js_bundle.js 
-    @sed -i -e 's/#glcanvas/#{{crate_name}}/g' ./target/wasm32-unknown-unknown/release/mq_js_bundle.js
-    @echo "{{index_file}}" > ./target/wasm32-unknown-unknown/release/index.html
+    cargo build --profile=web-release --target wasm32-unknown-unknown
+    wget -O ./target/wasm32-unknown-unknown/web-release/mq_js_bundle.js https://raw.githubusercontent.com/not-fl3/macroquad/master/js/mq_js_bundle.js 
+    @sed -i -e 's/#glcanvas/#{{crate_name}}/g' ./target/wasm32-unknown-unknown/web-release/mq_js_bundle.js
+    @echo "{{index_file}}" > ./target/wasm32-unknown-unknown/web-release/index.html
+    wasm-opt -Oz -o ./target/wasm32-unknown-unknown/web-release/{{crate_name}}.wasm ./target/wasm32-unknown-unknown/web-release/{{crate_name}}.wasm 
+    wasm-snip ./target/wasm32-unknown-unknown/web-release/{{crate_name}}.wasm  -o ./target/wasm32-unknown-unknown/web-release/{{crate_name}}.wasm 
+
