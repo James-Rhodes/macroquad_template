@@ -1,16 +1,19 @@
-use macroquad::{miniquad::window::screen_size, prelude::*};
+use macroquad::prelude::*;
 enum RenderState {
     CameraRendering,
     ScreenRendering,
 }
 
 pub struct Animation {
-    render_target: RenderTarget,
+    pub render_target: RenderTarget,
     camera: Camera2D,
     pub bg_color: Color,
     render_state: RenderState,
     pub draw_size: Vec2,
     material: Option<Material>,
+    width: f32,
+    height: f32,
+    scale: f32,
 }
 
 impl Animation {
@@ -44,6 +47,9 @@ impl Animation {
             render_state: RenderState::ScreenRendering,
             draw_size: vec2(width, height),
             material: None,
+            width,
+            height,
+            scale: Self::compute_scale(width, height),
         }
     }
 
@@ -52,22 +58,14 @@ impl Animation {
         self.screen_to_world(mouse)
     }
 
-    pub fn screen_to_world(&self, mut point: Vec2) -> Vec2 {
-        // Move window space to -1 -> 1
-        point.x = (point.x - screen_width() / 2.0) / (screen_width() * 0.5);
-        point.y = -(point.y - screen_height() / 2.0) / (screen_height() * 0.5);
-
-        let screen_size: Vec2 = screen_size().into();
-        let mut left_over_space: Vec2 = screen_size - self.draw_size; // in pixels
-        left_over_space /= screen_size; // as a percentage 0 -> 1
-        left_over_space += vec2(1., 1.); // We want the position to be 100% plus any left over
-                                         // space
-
-        // Convert from -1 -> 1 to render size + what ever percent is left over (so the borders
-        // don't mess up the conversions)
-        point.y *= 0.5 * left_over_space.y * self.render_target.texture.height();
-        point.x *= 0.5 * left_over_space.x * self.render_target.texture.width();
-        point
+    pub fn screen_to_world(&self, point: Vec2) -> Vec2 {
+        // Mouse position in the virtual screen
+        Vec2 {
+            x: ((point.x - (screen_width() - (self.width * self.scale)) * 0.5) / self.scale)
+                - 0.5 * self.width,
+            y: 0.5 * self.height
+                - (point.y - (screen_height() - (self.height * self.scale)) * 0.5) / self.scale,
+        }
     }
 
     pub fn enable_fxaa(&mut self) {
@@ -100,7 +98,7 @@ impl Animation {
 
     pub fn draw_frame(&mut self) {
         if matches!(self.render_state, RenderState::CameraRendering) {
-            panic!("ResizeableScreen::set_default_camera must be called before you can draw the frame to the screen");
+            panic!("Animation::set_default_camera must be called before you can draw the frame to the screen");
         }
 
         if let Some(material) = &self.material {
@@ -111,45 +109,26 @@ impl Animation {
         }
 
         // TODO: Uncomment this
-        // clear_background(self.bg_color);
+        clear_background(self.bg_color);
 
-        let (sw, sh) = screen_size();
+        self.scale = Self::compute_scale(self.width, self.height);
 
-        let tex_size = self.render_target.texture.size();
-        let tw = tex_size.x;
-        let th = tex_size.y;
-
-        let h_scale = sw / tw;
-        let v_scale = sh / th;
-
-        let scale = h_scale.min(v_scale);
-
-        let draw_width = tw * scale;
-        let draw_height = th * scale;
-        let mut new_x: f32 = 0.0;
-        let mut new_y: f32 = 0.0;
-
-        // Set the location to be in the center of the screen always
-        if h_scale < v_scale {
-            let left_over_space = sh - draw_height;
-            new_y = left_over_space / 2.0;
-        } else {
-            let left_over_space = sw - draw_width;
-            new_x = left_over_space / 2.0;
-        }
-
-        self.draw_size = vec2(draw_width, draw_height);
-
+        self.draw_size = vec2(self.width * self.scale, self.height * self.scale);
+        // Draw 'render_target' to window screen, porperly scaled and letterboxed
         draw_texture_ex(
             &self.render_target.texture,
-            new_x,
-            new_y,
+            (screen_width() - (self.width * self.scale)) * 0.5,
+            (screen_height() - (self.height * self.scale)) * 0.5,
             WHITE,
             DrawTextureParams {
                 dest_size: Some(self.draw_size),
                 ..Default::default()
             },
         );
+    }
+
+    fn compute_scale(width: f32, height: f32) -> f32 {
+        f32::min(screen_width() / width, screen_height() / height)
     }
 }
 
