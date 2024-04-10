@@ -36,7 +36,7 @@ impl Animation {
                 r: 43. / 255.,
                 g: 44. / 255.,
                 b: 47. / 255.,
-                a: 0.,
+                a: 1.,
             }
         };
 
@@ -108,7 +108,6 @@ impl Animation {
             gl_use_default_material();
         }
 
-        // TODO: Uncomment this
         clear_background(self.bg_color);
 
         self.scale = Self::compute_scale(self.width, self.height);
