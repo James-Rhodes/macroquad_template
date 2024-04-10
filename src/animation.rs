@@ -168,20 +168,20 @@ float rgb2luma(vec3 rgb){
 }
 
 float get_quality(int i) {
-    float QUALITY[12];
-    QUALITY[0] = 1.0;
-    QUALITY[1] = 1.0;
-    QUALITY[2] = 1.0;
-    QUALITY[3] = 1.0;
-    QUALITY[4] = 1.0;
-    QUALITY[5] = 1.0;
-    QUALITY[6] = 1.5;
-    QUALITY[7] = 2.0;
-    QUALITY[8] = 2.0;
-    QUALITY[9] = 2.0;
-    QUALITY[10] = 4.0;
-    QUALITY[11] = 8.0;
-    return QUALITY[i];
+    float quality = 0.0;
+    if(i < 6) {
+       quality = 1.0; 
+    } else if(i == 6) {
+       quality = 1.5; 
+    } else if(i > 6 && i < 10) {
+       quality = 2.0; 
+    } else if(i == 10) {
+       quality = 4.0; 
+    } else {
+        quality = 8.0;
+    }
+
+    return quality;
 }
 
 void main() {
