@@ -38,6 +38,8 @@ build-web:
     
     @# add this crate name as the canvas id
     @sed -i -e 's/#glcanvas/#{{crate_name}}/g' ./target/wasm32-unknown-unknown/web-release/mq_js_bundle.js
+    @sed -i -e 's/canvas.focus(),//g' ./target/wasm32-unknown-unknown/web-release/mq_js_bundle.js
+    @echo "export{load};" >> ./target/wasm32-unknown-unknown/web-release/mq_js_bundle.js
     @echo "{{index_file}}" > ./target/wasm32-unknown-unknown/web-release/index.html
     
     @# run wasm binary optimization
