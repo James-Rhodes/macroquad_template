@@ -1,9 +1,7 @@
 use std::f32::consts::PI;
 
 use macroquad::prelude::*;
-
-pub mod animation;
-use animation::Animation;
+use mqanim::Animation;
 
 const WINDOW_WIDTH: f32 = 1280.0;
 const WINDOW_HEIGHT: f32 = 720.0;
