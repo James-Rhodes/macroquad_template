@@ -1,4 +1,4 @@
-crate_name := `echo ${PWD##*/}`
+crate_name := `basename "$PWD" | tr '-' '_'`
 index_file := "<html lang='en'>
 
 <head>
@@ -22,8 +22,12 @@ index_file := "<html lang='en'>
 
 <body>
     <canvas id='" + crate_name + "' tabindex='1'></canvas>
-    <script src='./mq_js_bundle.js'></script>
-    <script>load('" + crate_name + ".wasm');</script> 
+    <script type='module' src='./mq_js_bundle.js'></script>
+    <script type='module'>
+        import { load } from './mq_js_bundle.js';
+
+        load('" + crate_name + ".wasm');
+    </script> 
 </body>
 
 </html>"
@@ -33,16 +37,11 @@ build-web:
     @# build the program
     cargo build --profile=web-release --target wasm32-unknown-unknown
 
-    @# get the wasm js files from the macroquad repo
-    wget -O ./target/wasm32-unknown-unknown/web-release/mq_js_bundle.js https://raw.githubusercontent.com/not-fl3/macroquad/master/js/mq_js_bundle.js 
-    
-    @# add this crate name as the canvas id
-    @sed -i -e 's/#glcanvas/#{{crate_name}}/g' ./target/wasm32-unknown-unknown/web-release/mq_js_bundle.js
-    @sed -i -e 's/canvas.focus(),//g' ./target/wasm32-unknown-unknown/web-release/mq_js_bundle.js
-    @echo "export{load};" >> ./target/wasm32-unknown-unknown/web-release/mq_js_bundle.js
     @echo "{{index_file}}" > ./target/wasm32-unknown-unknown/web-release/index.html
+    @cp ./assets/mq_js_bundle/mq_js_bundle.js ./target/wasm32-unknown-unknown/web-release/mq_js_bundle.js
+    @sed -i -e 's/#CRATE_NAME/#{{crate_name}}/g' ./target/wasm32-unknown-unknown/web-release/mq_js_bundle.js
     
     @# run wasm binary optimization
-    wasm-opt -Oz -o ./target/wasm32-unknown-unknown/web-release/{{crate_name}}.wasm ./target/wasm32-unknown-unknown/web-release/{{crate_name}}.wasm 
+    wasm-opt -Oz -o ./target/wasm32-unknown-unknown/web-release/{{crate_name}}.wasm ./target/wasm32-unknown-unknown/web-release/{{crate_name}}.wasm --enable-simd --enable-nontrapping-float-to-int --enable-bulk-memory-opt
     wasm-snip ./target/wasm32-unknown-unknown/web-release/{{crate_name}}.wasm  -o ./target/wasm32-unknown-unknown/web-release/{{crate_name}}.wasm 
 
