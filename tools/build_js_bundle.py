@@ -61,6 +61,14 @@ PATCHES = [
         "window.high_dpi=e",
         "high_dpi=e",
     ),
+    # Pause rendering while the canvas is off screen. `instance_visible` is
+    # provided by the wrapper below and kept up to date with an
+    # IntersectionObserver; the loop itself keeps ticking so it can resume
+    # immediately.
+    (
+        "function animation(){wasm_exports.frame(),",
+        "function animation(){if(!instance_visible){animation_frame_timeout=window.requestAnimationFrame(animation);return}wasm_exports.frame(),",
+    ),
 ]
 
 HEADER = '''/*!
@@ -117,7 +125,8 @@ function resolve_canvas(canvas_id) {
 
 // Load `wasm_path` into the canvas identified by `canvas_id`. Every call
 // creates an independent instance (its own WebGL context, wasm memory and
-// event handlers), so one bundle can serve any number of canvases.
+// event handlers), so one bundle can serve any number of canvases. Instances
+// pause rendering while their canvas is off screen.
 export function load(wasm_path, canvas_id = "glcanvas") {
     const canvas = resolve_canvas(canvas_id);
 
@@ -125,6 +134,30 @@ export function load(wasm_path, canvas_id = "glcanvas") {
     // declaring it, which only works in sloppy mode. This file is a module
     // and modules are always strict, so declare it here.
     let register_plugin;
+
+    // Keep off-screen instances paused. Every instance has its own frame
+    // loop, so a page full of animations would otherwise keep rendering
+    // canvases nobody can see. The loop itself keeps ticking (a rAF callback
+    // that returns immediately) and `frame()` is only called while the canvas
+    // is close to the viewport.
+    let instance_visible = true;
+    if (typeof IntersectionObserver !== "undefined") {
+        const visibility_margin = 200;
+        const rect = canvas.getBoundingClientRect();
+        instance_visible =
+            rect.bottom > -visibility_margin &&
+            rect.top < window.innerHeight + visibility_margin;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                instance_visible = entries.some((entry) => entry.isIntersecting);
+            },
+            { rootMargin: visibility_margin + "px 0px" },
+        );
+        observer.observe(canvas);
+        // Keep the observer alive for as long as the canvas exists.
+        canvas.__mqanim_observer = observer;
+    }
 
 '''
 

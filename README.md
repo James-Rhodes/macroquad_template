@@ -44,6 +44,11 @@ needs to pass a different canvas id to each call:
 </script>
 ```
 
+Instances pause themselves while their canvas is off screen: an
+`IntersectionObserver` watches the canvas and `frame()` is skipped until it
+comes back into view (with a 200px margin). Nothing needs to be done at the
+call site for this to work.
+
 ## Updating the JS bundle
 
 The upstream [macroquad](https://github.com/not-fl3/macroquad) bundle binds to
